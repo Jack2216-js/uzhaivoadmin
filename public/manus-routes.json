@@ -1,0 +1,14 @@
+{
+  "routes": [
+    { "path": "/", "title": "UZHAIVO Admin Login" },
+    { "path": "/dashboard", "title": "Overview" },
+    { "path": "/dashboard/worker-proofs", "title": "Worker Proofs Pending" },
+    { "path": "/dashboard/owner-verification", "title": "Private Owner Verification" },
+    { "path": "/dashboard/jobs", "title": "All Jobs" },
+    { "path": "/dashboard/workers", "title": "All Workers" },
+    { "path": "/dashboard/owners", "title": "All Owners" },
+    { "path": "/dashboard/approved", "title": "Approved" },
+    { "path": "/dashboard/rejected", "title": "Rejected" },
+    { "path": "/dashboard/settings", "title": "Settings" }
+  ]
+}

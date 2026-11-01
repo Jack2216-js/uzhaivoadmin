@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+html { min-height: 100%; scroll-behavior: smooth; }
+body { min-height: 100vh; margin: 0; background: #FFF7ED; color: #1A1A1A; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; }
+button, a, input, select { -webkit-tap-highlight-color: transparent; }
+a { color: inherit; text-decoration: none; }
+::selection { background: rgba(255, 140, 66, .22); }
+
+@layer components {
+  .input-control { @apply h-11 w-full rounded-xl border border-stone-200 bg-white px-3.5 text-sm text-ink outline-none transition placeholder:text-stone-400 focus:border-brand focus:ring-4 focus:ring-orange-100; }
+  .select-control { @apply h-11 rounded-xl border border-stone-200 bg-white px-3.5 text-sm text-stone-700 outline-none transition focus:border-brand focus:ring-4 focus:ring-orange-100; }
+  .button-primary { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-deep disabled:cursor-not-allowed disabled:opacity-60; }
+  .button-secondary { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 transition hover:border-stone-300 hover:bg-stone-50 disabled:opacity-60; }
+  .button-success { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-60; }
+  .button-danger { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700 disabled:opacity-60; }
+  .icon-button { @apply inline-flex h-10 w-10 items-center justify-center rounded-xl text-stone-500 transition hover:bg-stone-100 hover:text-ink; }
+  .table-scroll { @apply w-full overflow-x-auto rounded-xl border border-stone-100; }
+  .admin-table { @apply w-full min-w-[820px] border-collapse text-left text-sm; }
+  .admin-table th { @apply bg-stone-50 px-4 py-3 text-[11px] font-bold uppercase tracking-[.09em] text-stone-500; }
+  .admin-table td { @apply border-t border-stone-100 px-4 py-3.5 align-middle text-stone-700; }
+  .admin-table tr:hover td { @apply bg-orange-50/50; }
+  .status-pill { @apply inline-flex max-w-full items-center rounded-full px-2.5 py-1 text-[11px] font-bold capitalize; }
+  .status-green { @apply bg-emerald-50 text-emerald-700; }
+  .status-amber { @apply bg-amber-50 text-amber-700; }
+  .status-red { @apply bg-rose-50 text-rose-700; }
+  .status-blue { @apply bg-blue-50 text-blue-700; }
+  .metric-card { @apply flex min-h-[148px] items-start justify-between gap-4 rounded-2xl border border-stone-100 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-soft sm:p-6; }
+  .metric-icon { @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl; }
+  .tone-orange { @apply bg-orange-100 text-orange-600; }
+  .tone-red { @apply bg-rose-100 text-rose-600; }
+  .tone-blue { @apply bg-blue-100 text-blue-600; }
+  .tone-purple { @apply bg-purple-100 text-purple-600; }
+  .tone-green { @apply bg-emerald-100 text-emerald-600; }
+  .tone-slate { @apply bg-stone-100 text-stone-600; }
+}
+
+.skeleton-card { min-height: 210px; border: 1px solid #f1efed; border-radius: 1rem; background: white; padding: 1.25rem; }
+.skeleton-line, .skeleton-block { animation: shimmer 1.5s ease-in-out infinite; border-radius: .5rem; background: linear-gradient(90deg,#f2f0ed,#faf9f7,#f2f0ed); background-size: 200% 100%; }
+.skeleton-line { height: .75rem; }
+.skeleton-block { height: 6rem; flex: 1; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+
+.nav-link { display: flex; min-height: 46px; align-items: center; gap: .75rem; border-left: 3px solid transparent; border-radius: 0 .75rem .75rem 0; padding: .65rem .75rem; color: #57534e; font-size: .78rem; font-weight: 650; transition: color .16s ease, background-color .16s ease, border-color .16s ease; }
+.nav-link:hover { background: #fafaf9; color: #1A1A1A; }
+.nav-link-active { border-left-color: #FF8C42; background: #FFF7ED; color: #E67A32; }
