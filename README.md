@@ -17,7 +17,7 @@ Use Node.js 20+ and pnpm 11 (the repository pins `pnpm@11.25.0`). Install and ru
 
 ```bash
 pnpm install
-NEXT_PUBLIC_SUPABASE_URL=https://cbijbcebpjkkgfwhqjho.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY='<your Supabase anon/public key>' pnpm dev
+NEXT_PUBLIC_SUPABASE_URL=https://cbijbcebcbijxmhrqwwb.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY='<your Supabase anon/public key>' pnpm dev
 ```
 
 Configure `NEXT_PUBLIC_SUPABASE_ANON_KEY` via the project’s secure environment-variable store for deployed builds. The key is a public anon key, not a service-role secret. Do not place a service-role key in any `NEXT_PUBLIC_*` variable or browser bundle. The existing Supabase tables are used as provided; this website does not create, drop or alter database tables.

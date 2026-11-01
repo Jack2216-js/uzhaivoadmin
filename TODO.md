@@ -29,3 +29,7 @@
 - [x] Configure the supplied Supabase URL and secure project variable `NEXT_PUBLIC_SUPABASE_ANON_KEY`; use only existing tables and never drop/alter schema. Include setup/Vercel instructions and the requested feature list in README.
 - [x] Match the requested palette (`#FF8C42`, `#1A1A1A`, `#FFF7ED`, white, `#10B981`, `#F59E0B`, `#EF4444`, `#3B82F6`), rounded-2xl cards, subtle shadows, Sans typography and Tamil support. Make navigation a mobile drawer, stack cards on small screens and keep tables horizontally scrollable.
 - [x] Explain that localStorage + a public anon key is a demo-only login and not production authorization; warn that private document access requires restrictive Supabase RLS and must not be exposed by permissive policies.
+
+
+## Open Supabase prerequisite
+- [ ] Confirm the expected location or names for the missing `profiles`, `admin_users`, and `owner_verifications` relations. Read-only checks against the corrected project URL succeeded for `jobs`, `job_applications`, and `proof_submissions`; the other three returned PostgREST `PGRST205` (not found in the public schema cache). No database schema changes have been made; owner/worker directories, owner verification, and admin-user features need these relations exposed before their Supabase queries can work.

@@ -50,7 +50,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       setPendingWorker((proofs.count || 0) > 0 ? proofs.count || 0 : applications.count || 0);
       setPendingOwner(owners.count || 0);
       const issue = proofs.error || applications.error || owners.error;
-      if (issue) setLoadError("Live counts could not be loaded. Check your Supabase connection and row-level security policies.");
+      if (issue) setLoadError(`Live Supabase count error (${issue.code}): ${issue.message}`);
       else setLoadError("");
     };
     void loadCounts();

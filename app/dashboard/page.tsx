@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Activity, BadgeCheck, Briefcase, CheckCircle2, Clock3, Crown, Users, UserRoundCheck, Layers3, ArrowUpRight, PhoneCall } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { OwnerVerification, ProofSubmission } from "@/lib/types";
-import { formatDocType, formatDate, relationOne, timeAgo } from "@/lib/utils";
+import { errorMessage, formatDocType, formatDate, relationOne, timeAgo } from "@/lib/utils";
 import { ErrorNotice, LoadingState, MetricCard, PageHeading, Panel } from "@/components/ui";
 
 const zeroCounts = { jobs: 0, workerPending: 0, ownerPending: 0, workers: 0, owners: 0, verifiedOwners: 0, approvedJobs: 0, applications: 0 };
@@ -31,12 +31,18 @@ export default function OverviewPage() {
       supabase.from("proof_submissions").select("*, jobs(title)").eq("status", "submitted").order("created_at", { ascending: false }).limit(5),
       supabase.from("owner_verifications").select("id,owner_phone,owner_name,doc1_type,doc2_type,created_at,status").eq("status", "pending").order("created_at", { ascending: false }).limit(5),
     ]);
-    const issue = [jobsCount, workerProofCount, workerApplicationPendingCount, ownerPendingCount, workersCount, ownersCount, verifiedOwnersCount, approvedJobsCount, applicationsCount].find((result) => result.error);
+    const issue = [
+      { table: "jobs", error: jobsCount.error }, { table: "proof_submissions", error: workerProofCount.error },
+      { table: "job_applications", error: workerApplicationPendingCount.error }, { table: "owner_verifications", error: ownerPendingCount.error },
+      { table: "profiles", error: workersCount.error || ownersCount.error || verifiedOwnersCount.error },
+      { table: "jobs", error: approvedJobsCount.error }, { table: "job_applications", error: applicationsCount.error },
+      { table: "proof_submissions", error: recentProofs.error }, { table: "owner_verifications", error: recentOwners.error },
+    ].find((result) => result.error);
     const workerPending = (workerProofCount.count || 0) > 0 ? workerProofCount.count || 0 : workerApplicationPendingCount.count || 0;
     setCounts({ jobs: jobsCount.count || 0, workerPending, ownerPending: ownerPendingCount.count || 0, workers: workersCount.count || 0, owners: ownersCount.count || 0, verifiedOwners: verifiedOwnersCount.count || 0, approvedJobs: approvedJobsCount.count || 0, applications: applicationsCount.count || 0 });
     setProofs((recentProofs.data || []) as ProofSubmission[]);
     setOwners((recentOwners.data || []) as OwnerVerification[]);
-    if (issue || recentProofs.error || recentOwners.error) setError("Some dashboard data could not be loaded. Verify your Supabase connection and table policies.");
+    if (issue?.error) setError(`Supabase ${issue.table} query failed: ${errorMessage(issue.error)}`);
     else setError("");
     setLoading(false);
   }, []);
