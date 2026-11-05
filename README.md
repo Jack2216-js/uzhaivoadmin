@@ -14,6 +14,7 @@ The remaining admin features do not yet match the live schema. Profile queries n
 - Overview metrics and recent worker/owner queues, with 10-second refresh where the required tables exist.
 - Worker-proof review, Aadhaar/license filters, image inspection, realtime updates, approve/reject, and phone links; job review status cannot be written because the live `jobs` table has no `status` column.
 - Job search and detail view using the verified live columns. The page displays Active/Inactive from `is_active`, can deactivate an active row, and requires confirmation before permanent deletion. This is not an approval/rejection status.
+- Workers and Jobs have per-row and select-visible checkboxes, plus confirmed bulk deletion for explicitly selected records.
 - Responsive navigation, cards, horizontally scrollable tables, and English/Tamil labels.
 
 ## Local setup

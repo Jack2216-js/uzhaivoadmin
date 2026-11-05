@@ -16,13 +16,15 @@ export default function WorkersPage() {
   const [proofOwner, setProofOwner] = useState<Profile | null>(null);
   const [selectedImage, setSelectedImage] = useState<PreviewImage | null>(null);
   const [error, setError] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     // Deliberately exclude gov_id_url and verification_docs: this list needs neither.
     const result = await supabase.from("users").select("id,phone,name,role,created_at").eq("role", "worker").order("created_at", { ascending: false });
     if (result.error) { setError(errorMessage(result.error)); setWorkers([]); }
-    else { setError(""); setWorkers((result.data || []) as Profile[]); }
+    else { setError(""); setWorkers((result.data || []) as Profile[]); setSelectedIds([]); }
     setLoading(false);
   }, []);
 
@@ -41,14 +43,35 @@ export default function WorkersPage() {
     if (!window.confirm(`Remove worker profile ${worker.name || worker.phone || "this worker"}? The supplied schema has no banned flag, so this permanently deletes the profile row.`)) return;
     const result = await supabase.from("users").delete().eq("id", worker.id);
     if (result.error) setError(errorMessage(result.error));
-    else setWorkers((current) => current.filter((item) => item.id !== worker.id));
+    else { setWorkers((current) => current.filter((item) => item.id !== worker.id)); setSelectedIds((current) => current.filter((id) => id !== worker.id)); }
+  }
+
+  function toggleWorker(id: string) {
+    setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  }
+
+  function toggleVisibleWorkers() {
+    const visibleIds = visible.map((worker) => worker.id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
+    setSelectedIds((current) => allSelected ? current.filter((id) => !visibleIds.includes(id)) : Array.from(new Set([...current, ...visibleIds])));
+  }
+
+  async function deleteSelectedWorkers() {
+    const ids = selectedIds;
+    if (!ids.length || !window.confirm(`Permanently delete ${ids.length} selected worker profile${ids.length === 1 ? "" : "s"}? This cannot be undone.`)) return;
+    setDeleting(true); setError("");
+    const result = await supabase.from("users").delete().in("id", ids).eq("role", "worker");
+    if (result.error) setError(errorMessage(result.error));
+    else { setWorkers((current) => current.filter((worker) => !ids.includes(worker.id))); setSelectedIds((current) => current.filter((id) => !ids.includes(id))); }
+    setDeleting(false);
   }
 
   return <>
       <PageHeading title="All Workers" subtitle="Worker directory and proof-submission history. Verification, ratings and completed-job totals are not present in the live users schema." actions={<span className="rounded-full bg-white px-3 py-2 text-xs font-bold text-stone-600 shadow-sm">{workers.length} workers</span>} />
     {error && <ErrorNotice message={error} />}
     <Panel><div className="mb-4"><SearchField value={search} onChange={setSearch} placeholder="Search worker name or phone…" /></div>
-      {loading ? <LoadingState label="Loading workers" /> : visible.length === 0 ? <EmptyState icon={Users} title="No workers found" detail="Registered worker profiles appear here." /> : <div className="table-scroll"><table className="admin-table"><thead><tr><th>Worker</th><th>Phone</th><th>Verification</th><th>Rating</th><th>Jobs completed</th><th>Joined</th><th>Actions</th></tr></thead><tbody>{visible.map((worker) => <tr key={worker.id}><td><div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-xs font-bold text-purple-700">{(worker.name || "W").slice(0, 1).toUpperCase()}</span><div><p className="font-bold text-ink">{worker.name || "Unnamed worker"}</p><p className="text-[10px] text-stone-400">{worker.id.slice(0, 8)}</p></div></div></td><td>{worker.phone ? <a className="inline-flex items-center gap-1 text-xs font-semibold text-brand" href={phoneHref(worker.phone)}><Phone size={13} />{worker.phone}</a> : "—"}</td><td><span className="text-xs text-stone-400">Not in schema</span></td><td className="text-xs text-stone-400">Not in schema</td><td className="text-xs text-stone-400">Not in schema</td><td className="whitespace-nowrap text-xs">{formatDate(worker.created_at)}</td><td><div className="flex items-center gap-1"><button onClick={() => void viewProofs(worker)} className="icon-button !h-9 !w-9 text-blue-600" title="View proofs" aria-label="View proofs"><Eye size={16} /></button><button onClick={() => void removeWorker(worker)} className="icon-button !h-9 !w-9 text-rose-600" title="Ban / remove" aria-label="Ban or remove worker"><Trash2 size={16} /></button></div></td></tr>)}</tbody></table></div>}
+      {selectedIds.length > 0 && <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 p-3"><span className="text-sm font-semibold text-rose-900">{selectedIds.length} workers selected</span><button type="button" className="button-danger" disabled={deleting} onClick={() => void deleteSelectedWorkers()}><Trash2 size={16} />{deleting ? "Deleting…" : "Delete selected"}</button></div>}
+      {loading ? <LoadingState label="Loading workers" /> : visible.length === 0 ? <EmptyState icon={Users} title="No workers found" detail="Registered worker profiles appear here." /> : <div className="table-scroll"><table className="admin-table"><thead><tr><th><input type="checkbox" aria-label="Select all visible workers" checked={visible.length > 0 && visible.every((worker) => selectedIds.includes(worker.id))} onChange={toggleVisibleWorkers} /></th><th>Worker</th><th>Phone</th><th>Verification</th><th>Rating</th><th>Jobs completed</th><th>Joined</th><th>Actions</th></tr></thead><tbody>{visible.map((worker) => <tr key={worker.id}><td><input type="checkbox" aria-label={`Select ${worker.name || worker.phone || "worker"}`} checked={selectedIds.includes(worker.id)} onChange={() => toggleWorker(worker.id)} /></td><td><div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-xs font-bold text-purple-700">{(worker.name || "W").slice(0, 1).toUpperCase()}</span><div><p className="font-bold text-ink">{worker.name || "Unnamed worker"}</p><p className="text-[10px] text-stone-400">{worker.id.slice(0, 8)}</p></div></div></td><td>{worker.phone ? <a className="inline-flex items-center gap-1 text-xs font-semibold text-brand" href={phoneHref(worker.phone)}><Phone size={13} />{worker.phone}</a> : "—"}</td><td><span className="text-xs text-stone-400">Not in schema</span></td><td className="text-xs text-stone-400">Not in schema</td><td className="text-xs text-stone-400">Not in schema</td><td className="whitespace-nowrap text-xs">{formatDate(worker.created_at)}</td><td><div className="flex items-center gap-1"><button onClick={() => void viewProofs(worker)} className="icon-button !h-9 !w-9 text-blue-600" title="View proofs" aria-label="View proofs"><Eye size={16} /></button><button onClick={() => void removeWorker(worker)} className="icon-button !h-9 !w-9 text-rose-600" title="Ban / remove" aria-label="Ban or remove worker"><Trash2 size={16} /></button></div></td></tr>)}</tbody></table></div>}
     </Panel>
     <Modal open={Boolean(proofOwner)} onClose={() => setProofOwner(null)} title={`Worker proofs · ${proofOwner?.name || proofOwner?.phone || "Worker"}`} className="max-w-3xl"><p className="mb-4 text-xs text-stone-500">Proof submission history for {proofOwner?.phone || "this worker"}. Admin review only.</p>{proofs.length === 0 ? <p className="rounded-xl bg-stone-50 p-6 text-center text-sm text-stone-500">No worker proof submissions found.</p> : <div className="space-y-3">{proofs.map((proof) => <div key={proof.id} className="flex flex-col gap-3 rounded-xl border border-stone-100 p-3 sm:flex-row sm:items-center"><div className="h-20 w-full overflow-hidden rounded-lg bg-stone-100 sm:w-28">{proof.proof_url && <button onClick={() => setSelectedImage({ label: formatDocType(proof.proof_type), url: proof.proof_url || "" })} className="h-full w-full"><img src={proof.proof_url} alt={formatDocType(proof.proof_type)} className="h-full w-full object-cover" /></button>}</div><div className="flex-1"><p className="text-sm font-bold">{formatDocType(proof.proof_type)}</p><p className="mt-1 text-xs text-stone-500">{proof.status || "submitted"} · {formatDate(proof.created_at)}</p><p className="mt-1 text-[10px] text-stone-400">Job ID: {proof.job_id || "—"}</p></div><StatusPill status={proof.status}>{proof.status || "submitted"}</StatusPill></div>)}</div>}</Modal>
     {selectedImage && <ImageGalleryModal open onClose={() => setSelectedImage(null)} title={selectedImage.label} images={[selectedImage]} />}
