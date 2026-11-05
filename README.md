@@ -6,7 +6,7 @@ Responsive admin dashboard built with Next.js 14 App Router, React 18, TypeScrip
 
 The jobs query now uses columns confirmed on the live `public.jobs` table, including `is_active`, `phone`, `proof_required`, and `proof_description`; the app no longer requests absent `jobs.status`, `jobs.owner_phone`, or `jobs.proof_requirements`. The proof queue no longer assumes a foreign-key relationship from `proof_submissions` to `jobs`; it uses the proof row's `job_title`, and the pending-application fallback uses the confirmed relationship.
 
-The remaining admin features do not yet match the live schema. The dashboard currently expects `profiles`, `admin_users`, and `owner_verifications`, which are not exposed in `public`; the database instead shows `users` and `user_proofs`. The `users` table lacks verification/rating fields expected by the app. See [`SCHEMA-INSPECTION.md`](SCHEMA-INSPECTION.md) for the read-only findings and [`TODO.md`](TODO.md) for open items. No Supabase schema or data has been changed.
+The remaining admin features do not yet match the live schema. Profile queries now target the existing `public.users` table, but its verification/rating fields are absent. `admin_users` and `owner_verifications` are not exposed in `public`; the database also shows `user_proofs`. See [`SCHEMA-INSPECTION.md`](SCHEMA-INSPECTION.md) for the read-only findings and [`TODO.md`](TODO.md) for open items. No Supabase schema or data has been changed.
 
 ## Features
 
@@ -42,4 +42,6 @@ Before enabling private owner-document review or privileged production operation
 3. Enable restrictive RLS for private verification records and use a private Storage bucket for ID images. Do not store publicly readable government-ID URLs.
 4. Review policies for existing jobs, applications and proof records before changing their RLS; other applications may depend on current access.
 
-No RLS, schema, or database-row changes have been made. An exact migration and authentication change should be reviewed before execution.
+The unapplied [draft migration](supabase/migrations/20261105084000_uzhaivo_admin_panel.sql) adds nullable job/profile/review metadata, creates `admin_users` and `owner_verifications`, seeds Boss as a super-admin, and creates a new private owner-document bucket with owner/admin policies. It does not migrate unknown data from `user_proofs`, infer job-owner relationships, or alter existing-table RLS. The photo columns must hold private Storage object keys, which the authenticated app must turn into short-lived signed URLs. Review this script before any execution.
+
+No RLS, schema, or database-row changes have been made. The demo login is still active in the website until the real-auth approach is approved and implemented.

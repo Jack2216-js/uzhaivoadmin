@@ -20,7 +20,7 @@ export default function WorkersPage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     // Deliberately exclude gov_id_url and verification_docs: this list needs neither.
-    const result = await supabase.from("profiles").select("id,phone,name,role,verified,rating,jobs_completed,created_at").eq("role", "worker").order("created_at", { ascending: false });
+    const result = await supabase.from("users").select("id,phone,name,role,verified,rating,jobs_completed,created_at").eq("role", "worker").order("created_at", { ascending: false });
     if (result.error) { setError(errorMessage(result.error)); setWorkers([]); }
     else { setError(""); setWorkers((result.data || []) as Profile[]); }
     setLoading(false);
@@ -39,7 +39,7 @@ export default function WorkersPage() {
 
   async function removeWorker(worker: Profile) {
     if (!window.confirm(`Remove worker profile ${worker.name || worker.phone || "this worker"}? The supplied schema has no banned flag, so this permanently deletes the profile row.`)) return;
-    const result = await supabase.from("profiles").delete().eq("id", worker.id);
+    const result = await supabase.from("users").delete().eq("id", worker.id);
     if (result.error) setError(errorMessage(result.error));
     else setWorkers((current) => current.filter((item) => item.id !== worker.id));
   }

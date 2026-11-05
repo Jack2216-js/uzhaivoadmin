@@ -20,7 +20,7 @@ export default function OwnersPage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     // Never select gov_id_url, verification_docs or identity photos for this general listing.
-    const ownersResult = await supabase.from("profiles").select("id,phone,name,role,is_verified_owner,blue_tick,verified,created_at").eq("role", "owner").order("created_at", { ascending: false });
+    const ownersResult = await supabase.from("users").select("id,phone,name,role,is_verified_owner,blue_tick,verified,created_at").eq("role", "owner").order("created_at", { ascending: false });
     if (ownersResult.error) { setError(errorMessage(ownersResult.error)); setOwners([]); }
     else { setOwners((ownersResult.data || []) as Profile[]); setError(""); }
     setLoading(false);
@@ -37,14 +37,14 @@ export default function OwnersPage() {
 
   async function removeBlueTick(owner: Profile) {
     if (!window.confirm(`Remove the Blue Tick from ${owner.name || owner.phone}?`)) return;
-    const result = await supabase.from("profiles").update({ is_verified_owner: false, blue_tick: false, verified: false }).eq("id", owner.id);
+    const result = await supabase.from("users").update({ is_verified_owner: false, blue_tick: false, verified: false }).eq("id", owner.id);
     if (result.error) setError(errorMessage(result.error));
     else setOwners((current) => current.map((item) => item.id === owner.id ? { ...item, is_verified_owner: false, blue_tick: false, verified: false } : item));
   }
 
   async function removeOwner(owner: Profile) {
     if (!window.confirm(`Remove owner profile ${owner.name || owner.phone || "this owner"}? This permanently deletes the profile row.`)) return;
-    const result = await supabase.from("profiles").delete().eq("id", owner.id);
+    const result = await supabase.from("users").delete().eq("id", owner.id);
     if (result.error) setError(errorMessage(result.error)); else setOwners((current) => current.filter((item) => item.id !== owner.id));
   }
 

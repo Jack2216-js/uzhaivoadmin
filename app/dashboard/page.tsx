@@ -23,9 +23,9 @@ export default function OverviewPage() {
       supabase.from("proof_submissions").select("id", { count: "exact", head: true }).eq("status", "submitted"),
       supabase.from("job_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
       supabase.from("owner_verifications").select("id", { count: "exact", head: true }).eq("status", "pending"),
-      supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "worker"),
-      supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "owner"),
-      supabase.from("profiles").select("id", { count: "exact", head: true }).eq("is_verified_owner", true),
+      supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "worker"),
+      supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "owner"),
+      supabase.from("users").select("id", { count: "exact", head: true }).eq("is_verified_owner", true),
       supabase.from("jobs").select("id", { count: "exact", head: true }).eq("is_active", true),
       supabase.from("job_applications").select("id", { count: "exact", head: true }),
       supabase.from("proof_submissions").select("*").eq("status", "submitted").order("created_at", { ascending: false }).limit(5),
@@ -34,7 +34,7 @@ export default function OverviewPage() {
     const issue = [
       { table: "jobs", error: jobsCount.error }, { table: "proof_submissions", error: workerProofCount.error },
       { table: "job_applications", error: workerApplicationPendingCount.error }, { table: "owner_verifications", error: ownerPendingCount.error },
-      { table: "profiles", error: workersCount.error || ownersCount.error || verifiedOwnersCount.error },
+      { table: "users", error: workersCount.error || ownersCount.error || verifiedOwnersCount.error },
       { table: "jobs", error: activeJobsCount.error }, { table: "job_applications", error: applicationsCount.error },
       { table: "proof_submissions", error: recentProofs.error }, { table: "owner_verifications", error: recentOwners.error },
     ].find((result) => result.error);
