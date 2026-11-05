@@ -18,14 +18,13 @@ export default function OverviewPage() {
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
-    const [jobsCount, workerProofCount, workerApplicationPendingCount, ownerPendingCount, workersCount, ownersCount, verifiedOwnersCount, activeJobsCount, applicationsCount, recentProofs, recentOwners] = await Promise.all([
+    const [jobsCount, workerProofCount, workerApplicationPendingCount, ownerPendingCount, workersCount, ownersCount, activeJobsCount, applicationsCount, recentProofs, recentOwners] = await Promise.all([
       supabase.from("jobs").select("id", { count: "exact", head: true }),
       supabase.from("proof_submissions").select("id", { count: "exact", head: true }).eq("status", "submitted"),
       supabase.from("job_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
       supabase.from("owner_verifications").select("id", { count: "exact", head: true }).eq("status", "pending"),
       supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "worker"),
       supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "owner"),
-      supabase.from("users").select("id", { count: "exact", head: true }).eq("is_verified_owner", true),
       supabase.from("jobs").select("id", { count: "exact", head: true }).eq("is_active", true),
       supabase.from("job_applications").select("id", { count: "exact", head: true }),
       supabase.from("proof_submissions").select("*").eq("status", "submitted").order("created_at", { ascending: false }).limit(5),
@@ -34,12 +33,12 @@ export default function OverviewPage() {
     const issue = [
       { table: "jobs", error: jobsCount.error }, { table: "proof_submissions", error: workerProofCount.error },
       { table: "job_applications", error: workerApplicationPendingCount.error }, { table: "owner_verifications", error: ownerPendingCount.error },
-      { table: "users", error: workersCount.error || ownersCount.error || verifiedOwnersCount.error },
+      { table: "users", error: workersCount.error || ownersCount.error },
       { table: "jobs", error: activeJobsCount.error }, { table: "job_applications", error: applicationsCount.error },
       { table: "proof_submissions", error: recentProofs.error }, { table: "owner_verifications", error: recentOwners.error },
     ].find((result) => result.error);
     const workerPending = (workerProofCount.count || 0) > 0 ? workerProofCount.count || 0 : workerApplicationPendingCount.count || 0;
-    setCounts({ jobs: jobsCount.count || 0, workerPending, ownerPending: ownerPendingCount.count || 0, workers: workersCount.count || 0, owners: ownersCount.count || 0, verifiedOwners: verifiedOwnersCount.count || 0, activeJobs: activeJobsCount.count || 0, applications: applicationsCount.count || 0 });
+    setCounts({ jobs: jobsCount.count || 0, workerPending, ownerPending: ownerPendingCount.count || 0, workers: workersCount.count || 0, owners: ownersCount.count || 0, verifiedOwners: 0, activeJobs: activeJobsCount.count || 0, applications: applicationsCount.count || 0 });
     setProofs((recentProofs.data || []) as ProofSubmission[]);
     setOwners((recentOwners.data || []) as OwnerVerification[]);
     if (issue?.error) setError(`Supabase ${issue.table} query failed: ${errorMessage(issue.error)}`);
@@ -62,7 +61,7 @@ export default function OverviewPage() {
       <MetricCard label="Owner Verifications" value={counts.ownerPending} detail="Private · 4 photos each" icon={BadgeCheck} tone="blue" />
       <MetricCard label="Workers" value={counts.workers} detail="Registered profiles" icon={Users} tone="purple" />
       <MetricCard label="Owners" value={counts.owners} detail="Registered profiles" icon={Crown} tone="green" />
-      <MetricCard label="Blue Tick Owners" value={counts.verifiedOwners} detail="Owner documents reviewed" icon={UserRoundCheck} tone="blue" />
+      <MetricCard label="Blue Tick Owners" value="—" detail="Not in the current users schema" icon={UserRoundCheck} tone="blue" />
       <MetricCard label="Active Jobs" value={counts.activeJobs} detail="jobs.is_active = true" icon={CheckCircle2} tone="green" />
       <MetricCard label="Applications" value={counts.applications} detail="All worker applications" icon={Layers3} tone="slate" />
     </div>

@@ -54,9 +54,7 @@ export default function OwnerVerificationPage() {
     setBusy(item.id); setError(""); setNotice("");
     const { error: verificationError } = await supabase.from("owner_verifications").update({ status: "approved", verified_at: new Date().toISOString(), verified_by: ADMIN_PHONE }).eq("id", item.id);
     if (verificationError) { setError(errorMessage(verificationError)); setBusy(""); return; }
-    const { error: profileError } = await supabase.from("users").update({ is_verified_owner: true, blue_tick: true, verified: true }).eq("phone", item.owner_phone);
-    if (profileError) setError(`Verification saved, but the profile badge could not be updated: ${errorMessage(profileError)}`);
-    else setNotice(`Owner ${item.owner_phone || item.owner_name || ""} verified by ${ADMIN_PHONE}. Blue Tick given after review of four photos.`);
+    setNotice(`Owner ${item.owner_phone || item.owner_name || ""} verification record was approved. Blue Tick cannot be written because the live users table has no verification columns.`);
     setVerifications((current) => current.filter((verification) => verification.id !== item.id));
     if (selected?.id === item.id) setSelected(null);
     setBusy("");
