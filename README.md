@@ -1,15 +1,20 @@
 # UZHAIVO Admin Panel
 
-Responsive super-admin dashboard built with Next.js App Router, React 18, TypeScript, Tailwind CSS, lucide-react, and Supabase JS. The package manifest retains the requested Next.js 14.2 line and pins the latest patched 14.2.35 release instead of the vulnerable 14.2.0 patch.
+Responsive admin dashboard built with Next.js 14 App Router, React 18, TypeScript, Tailwind CSS, lucide-react, and Supabase JS. The app targets the latest patched Next.js 14.2 release, `14.2.35`.
+
+## Current status
+
+The jobs query now uses columns confirmed on the live `public.jobs` table, including `is_active`, `phone`, `proof_required`, and `proof_description`; the app no longer requests absent `jobs.status`, `jobs.owner_phone`, or `jobs.proof_requirements`. The proof queue no longer assumes a foreign-key relationship from `proof_submissions` to `jobs`; it uses the proof row's `job_title`, and the pending-application fallback uses the confirmed relationship.
+
+The remaining admin features do not yet match the live schema. The dashboard currently expects `profiles`, `admin_users`, and `owner_verifications`, which are not exposed in `public`; the database instead shows `users` and `user_proofs`. The `users` table lacks verification/rating fields expected by the app. See [`SCHEMA-INSPECTION.md`](SCHEMA-INSPECTION.md) for the read-only findings and [`TODO.md`](TODO.md) for open items. No Supabase schema or data has been changed.
 
 ## Features
 
 - Demo admin login for `9025421145` / `+919025421145` with OTP `1234`.
-- Overview dashboard with eight live metrics, recent proof and private owner-verification queues, plus 10-second refresh.
-- Worker proof review with joined job information, Aadhaar/license filters, image inspection/download, realtime updates, approve/reject, and phone links.
-- Private owner verification review: any two different IDs among Aadhaar, Voter ID and Driving License, with front and back photos for each (four images); blue-tick approval, rejection reason, image view/download and realtime updates.
-- Searchable job, worker and owner directories; status history for approved/rejected records; admin-user settings.
-- Mobile navigation drawer, responsive cards, horizontally scrollable tables, and English/Tamil labels.
+- Overview metrics and recent worker/owner queues, with 10-second refresh where the required tables exist.
+- Worker-proof review, Aadhaar/license filters, image inspection, realtime updates, approve/reject, and phone links; job review status cannot be written because the live `jobs` table has no `status` column.
+- Job search and detail view using the verified live columns. The page displays Active/Inactive from `is_active`, can deactivate an active row, and requires confirmation before permanent deletion. This is not an approval/rejection status.
+- Responsive navigation, cards, horizontally scrollable tables, and English/Tamil labels.
 
 ## Local setup
 
@@ -17,23 +22,24 @@ Use Node.js 20+ and pnpm 11 (the repository pins `pnpm@11.25.0`). Install and ru
 
 ```bash
 pnpm install
-NEXT_PUBLIC_SUPABASE_URL=https://cbijbcebcbijxmhrqwwb.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY='<your Supabase anon/public key>' pnpm dev
+NEXT_PUBLIC_SUPABASE_ANON_KEY='<your Supabase anon/public key>' pnpm dev
 ```
 
-Configure `NEXT_PUBLIC_SUPABASE_ANON_KEY` via the project’s secure environment-variable store for deployed builds. The key is a public anon key, not a service-role secret. Do not place a service-role key in any `NEXT_PUBLIC_*` variable or browser bundle. The existing Supabase tables are used as provided; this website does not create, drop or alter database tables.
+The corrected project URL is configured in the app; `NEXT_PUBLIC_SUPABASE_URL` can override it if needed. Configure the anon key through the project's secure environment-variable store. It is a public anon key, not a service-role secret. Never place a service-role key in a `NEXT_PUBLIC_*` variable or browser bundle. The anon key cannot apply SQL DDL.
 
 ## Vercel
 
-Import the repository into Vercel, select Next.js, set the build command to `pnpm build`, and add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to the environments in which the site will run. Redeploy after changing build-time public variables. No service-role key is needed or accepted by the browser client.
+Import the repository into Vercel, select Next.js, use `pnpm build`, and provide `NEXT_PUBLIC_SUPABASE_ANON_KEY` in the environments where the site runs. Add `NEXT_PUBLIC_SUPABASE_URL` only if overriding the configured URL. Redeploy after changing public build-time variables.
 
-## Existing data and privacy requirements
+## Privacy and required production changes
 
-The dashboard expects the supplied `jobs`, `job_applications`, `proof_submissions`, `profiles`, `admin_users`, and `owner_verifications` tables and the listed columns. The owners and workers directories deliberately do not select `gov_id_url` or `verification_docs`. Owner government-ID images are loaded only inside the private administrator review screens; approved/rejected history shows only document types and status metadata.
+**The requested OTP `1234` and `localStorage` admin flag are demo-only, not production authentication.** Anyone can inspect or modify browser storage and call Supabase directly with the anon key. The supplied screenshot showed RLS disabled on `proof_submissions`. Frontend-only hiding cannot protect government-ID images.
 
-**Security limitation: the requested OTP `1234` and `localStorage` admin flag are a demo-only client-side gate, not production authentication.** Anyone can inspect or modify browser storage and call Supabase directly with the public anon key. The user-provided brief also states that permissive “allow all” RLS policies exist. If those policies allow anon access to `owner_verifications`, frontend-only hiding cannot keep ID photos private. Before production, replace the demo login with server-verified authentication, enforce admin-only RLS for every sensitive table and storage object, restrict workers to their own permitted records, and audit storage URLs. Do not deploy private ID images under policies that grant public/anon reads. This app does not claim to repair or override the existing RLS configuration.
+Before enabling private owner-document review or privileged production operations:
 
-## Data changes
+1. Replace the demo gate with real Supabase Phone Auth (or another approved verified identity flow).
+2. Add the missing profile/admin/owner-verification schema additively; do not drop existing tables or infer the meanings of `jobs.phone`, `jobs.owner_id`, or `jobs.is_active` beyond the fields' literal names.
+3. Enable restrictive RLS for private verification records and use a private Storage bucket for ID images. Do not store publicly readable government-ID URLs.
+4. Review policies for existing jobs, applications and proof records before changing their RLS; other applications may depend on current access.
 
-Dashboard pages issue Supabase selects. Approve/reject, delete, ban-as-reject, blue-tick changes, admin creation and admin deletion write to existing rows only after an administrator explicitly presses an action. Confirm dialogs guard destructive deletes/removals. The worker `proof_submissions` schema has no `rejection_reason` column, so worker rejection reasons are collected for the action but cannot be persisted in that table; owner rejection reasons are stored as the provided schema supports.
-
-Worker proof records contain a submission `created_at` field but no `approved_at` or `rejected_at`; worker application fallback records include `updated_at`. The history views do not mislabel proof submission time as decision time and show when the decision timestamp is unavailable in the existing schema. Owner approvals show the provided `verified_at`; owner rejections have no dedicated decision-time field in the supplied schema, so the UI marks it unavailable.
+No RLS, schema, or database-row changes have been made. An exact migration and authentication change should be reviewed before execution.

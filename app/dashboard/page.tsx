@@ -5,10 +5,10 @@ import Link from "next/link";
 import { Activity, BadgeCheck, Briefcase, CheckCircle2, Clock3, Crown, Users, UserRoundCheck, Layers3, ArrowUpRight, PhoneCall } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { OwnerVerification, ProofSubmission } from "@/lib/types";
-import { errorMessage, formatDocType, formatDate, relationOne, timeAgo } from "@/lib/utils";
+import { errorMessage, formatDocType, formatDate, timeAgo } from "@/lib/utils";
 import { ErrorNotice, LoadingState, MetricCard, PageHeading, Panel } from "@/components/ui";
 
-const zeroCounts = { jobs: 0, workerPending: 0, ownerPending: 0, workers: 0, owners: 0, verifiedOwners: 0, approvedJobs: 0, applications: 0 };
+const zeroCounts = { jobs: 0, workerPending: 0, ownerPending: 0, workers: 0, owners: 0, verifiedOwners: 0, activeJobs: 0, applications: 0 };
 
 export default function OverviewPage() {
   const [counts, setCounts] = useState(zeroCounts);
@@ -18,7 +18,7 @@ export default function OverviewPage() {
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
-    const [jobsCount, workerProofCount, workerApplicationPendingCount, ownerPendingCount, workersCount, ownersCount, verifiedOwnersCount, approvedJobsCount, applicationsCount, recentProofs, recentOwners] = await Promise.all([
+    const [jobsCount, workerProofCount, workerApplicationPendingCount, ownerPendingCount, workersCount, ownersCount, verifiedOwnersCount, activeJobsCount, applicationsCount, recentProofs, recentOwners] = await Promise.all([
       supabase.from("jobs").select("id", { count: "exact", head: true }),
       supabase.from("proof_submissions").select("id", { count: "exact", head: true }).eq("status", "submitted"),
       supabase.from("job_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
@@ -26,20 +26,20 @@ export default function OverviewPage() {
       supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "worker"),
       supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "owner"),
       supabase.from("profiles").select("id", { count: "exact", head: true }).eq("is_verified_owner", true),
-      supabase.from("jobs").select("id", { count: "exact", head: true }).eq("status", "approved"),
+      supabase.from("jobs").select("id", { count: "exact", head: true }).eq("is_active", true),
       supabase.from("job_applications").select("id", { count: "exact", head: true }),
-      supabase.from("proof_submissions").select("*, jobs(title)").eq("status", "submitted").order("created_at", { ascending: false }).limit(5),
+      supabase.from("proof_submissions").select("*").eq("status", "submitted").order("created_at", { ascending: false }).limit(5),
       supabase.from("owner_verifications").select("id,owner_phone,owner_name,doc1_type,doc2_type,created_at,status").eq("status", "pending").order("created_at", { ascending: false }).limit(5),
     ]);
     const issue = [
       { table: "jobs", error: jobsCount.error }, { table: "proof_submissions", error: workerProofCount.error },
       { table: "job_applications", error: workerApplicationPendingCount.error }, { table: "owner_verifications", error: ownerPendingCount.error },
       { table: "profiles", error: workersCount.error || ownersCount.error || verifiedOwnersCount.error },
-      { table: "jobs", error: approvedJobsCount.error }, { table: "job_applications", error: applicationsCount.error },
+      { table: "jobs", error: activeJobsCount.error }, { table: "job_applications", error: applicationsCount.error },
       { table: "proof_submissions", error: recentProofs.error }, { table: "owner_verifications", error: recentOwners.error },
     ].find((result) => result.error);
     const workerPending = (workerProofCount.count || 0) > 0 ? workerProofCount.count || 0 : workerApplicationPendingCount.count || 0;
-    setCounts({ jobs: jobsCount.count || 0, workerPending, ownerPending: ownerPendingCount.count || 0, workers: workersCount.count || 0, owners: ownersCount.count || 0, verifiedOwners: verifiedOwnersCount.count || 0, approvedJobs: approvedJobsCount.count || 0, applications: applicationsCount.count || 0 });
+    setCounts({ jobs: jobsCount.count || 0, workerPending, ownerPending: ownerPendingCount.count || 0, workers: workersCount.count || 0, owners: ownersCount.count || 0, verifiedOwners: verifiedOwnersCount.count || 0, activeJobs: activeJobsCount.count || 0, applications: applicationsCount.count || 0 });
     setProofs((recentProofs.data || []) as ProofSubmission[]);
     setOwners((recentOwners.data || []) as OwnerVerification[]);
     if (issue?.error) setError(`Supabase ${issue.table} query failed: ${errorMessage(issue.error)}`);
@@ -63,12 +63,12 @@ export default function OverviewPage() {
       <MetricCard label="Workers" value={counts.workers} detail="Registered profiles" icon={Users} tone="purple" />
       <MetricCard label="Owners" value={counts.owners} detail="Registered profiles" icon={Crown} tone="green" />
       <MetricCard label="Blue Tick Owners" value={counts.verifiedOwners} detail="Owner documents reviewed" icon={UserRoundCheck} tone="blue" />
-      <MetricCard label="Approved Jobs" value={counts.approvedJobs} detail="Current approved state" icon={CheckCircle2} tone="green" />
+      <MetricCard label="Active Jobs" value={counts.activeJobs} detail="jobs.is_active = true" icon={CheckCircle2} tone="green" />
       <MetricCard label="Applications" value={counts.applications} detail="All worker applications" icon={Layers3} tone="slate" />
     </div>
     <div className="mt-7 grid gap-5 xl:grid-cols-2">
       <Panel className="!p-0"><div className="flex items-center justify-between gap-3 p-5 sm:p-6"><div><p className="text-xs font-bold uppercase tracking-[.1em] text-orange-600">Review queue</p><h2 className="mt-1 text-lg font-extrabold">Recent Worker Proofs</h2></div><Link href="/dashboard/worker-proofs" className="inline-flex items-center gap-1 text-xs font-bold text-brand hover:text-brand-deep">View queue <ArrowUpRight size={14} /></Link></div><div className="border-t border-stone-100 px-5 sm:px-6">
-        {loading ? <p className="py-8 text-sm text-stone-400">Loading recent submissions…</p> : proofs.length === 0 ? <div className="py-10 text-center"><CheckCircle2 className="mx-auto text-emerald-500" size={32} /><p className="mt-2 text-sm font-semibold text-stone-600">No submitted worker proofs</p></div> : proofs.map((proof) => { const job = relationOne(proof.jobs); return <div key={proof.id} className="flex items-center justify-between gap-4 border-b border-stone-100 py-4 last:border-0"><div className="min-w-0"><p className="truncate text-sm font-bold text-ink">{proof.worker_name || "Worker"}</p><p className="mt-1 truncate text-xs text-stone-500">{job?.title || "Job proof"} <span className="mx-1 text-stone-300">·</span> {timeAgo(proof.created_at)}</p></div><Link href="/dashboard/worker-proofs" className="button-secondary !min-h-9 !px-3 !py-1.5 text-xs">Review</Link></div>; })}
+        {loading ? <p className="py-8 text-sm text-stone-400">Loading recent submissions…</p> : proofs.length === 0 ? <div className="py-10 text-center"><CheckCircle2 className="mx-auto text-emerald-500" size={32} /><p className="mt-2 text-sm font-semibold text-stone-600">No submitted worker proofs</p></div> : proofs.map((proof) => <div key={proof.id} className="flex items-center justify-between gap-4 border-b border-stone-100 py-4 last:border-0"><div className="min-w-0"><p className="truncate text-sm font-bold text-ink">{proof.worker_name || "Worker"}</p><p className="mt-1 truncate text-xs text-stone-500">{proof.job_title || "Job proof"} <span className="mx-1 text-stone-300">·</span> {timeAgo(proof.created_at)}</p></div><Link href="/dashboard/worker-proofs" className="button-secondary !min-h-9 !px-3 !py-1.5 text-xs">Review</Link></div>)}
       </div></Panel>
       <Panel className="border-2 !border-blue-100 !p-0"><div className="p-5 sm:p-6"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.1em] text-blue-600">Private admin review</p><h2 className="mt-1 text-lg font-extrabold">Recent Owner Verifications</h2></div><Link href="/dashboard/owner-verification" className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800">View queue <ArrowUpRight size={14} /></Link></div><div className="mt-4 flex gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900"><span>🔒</span><span>Private — 4 photos (front/back) · Admin 9025421145 and owner only. Any 2 document types.</span></div></div><div className="border-t border-stone-100 px-5 sm:px-6">{loading ? <p className="py-8 text-sm text-stone-400">Loading private queue…</p> : owners.length === 0 ? <div className="py-8 text-center text-sm text-stone-500">No pending owner verifications.</div> : owners.map((owner) => <div key={owner.id} className="flex items-center justify-between gap-4 border-b border-stone-100 py-4 last:border-0"><div className="min-w-0"><p className="truncate text-sm font-bold">{owner.owner_name || owner.owner_phone}</p><p className="mt-1 truncate text-xs text-stone-500">{formatDocType(owner.doc1_type)} + {formatDocType(owner.doc2_type)} · {timeAgo(owner.created_at)}</p></div><Link href="/dashboard/owner-verification" className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100">Private view</Link></div>)}</div></Panel>
     </div>

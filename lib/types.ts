@@ -3,9 +3,14 @@ export type Job = {
   title?: string | null;
   location?: string | null;
   salary?: string | null;
+  owner_id?: string | null;
+  phone?: string | null;
   owner_phone?: string | null;
   status?: string | null;
+  is_active?: boolean | null;
   requires_proof?: boolean | null;
+  proof_required?: boolean | null;
+  proof_description?: string | string[] | null;
   proof_requirements?: string[] | null;
   category?: string | null;
   created_at?: string | null;
@@ -15,6 +20,7 @@ export type Job = {
 export type ProofSubmission = {
   id: string;
   job_id?: string | null;
+  job_title?: string | null;
   worker_phone?: string | null;
   worker_name?: string | null;
   proof_type?: string | null;
