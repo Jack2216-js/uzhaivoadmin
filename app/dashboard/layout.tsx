@@ -49,7 +49,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       if (!active) return;
       setPendingWorker((proofs.count || 0) > 0 ? proofs.count || 0 : applications.count || 0);
       setPendingOwner(owners.count || 0);
-      const issue = proofs.error || applications.error || owners.error;
+      const issue = proofs.error || applications.error;
       if (issue) setLoadError(`Live Supabase count error (${issue.code}): ${issue.message}`);
       else setLoadError("");
     };

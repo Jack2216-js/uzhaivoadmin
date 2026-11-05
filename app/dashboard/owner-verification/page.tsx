@@ -33,12 +33,14 @@ export default function OwnerVerificationPage() {
   const [zoomImage, setZoomImage] = useState<PreviewImage | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [schemaUnavailable, setSchemaUnavailable] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     const { data, error: queryError } = await supabase.from("owner_verifications").select("*").eq("status", "pending").order("created_at", { ascending: false });
-    if (queryError) { setError(errorMessage(queryError)); setVerifications([]); }
-    else { setVerifications((data || []) as OwnerVerification[]); setError(""); }
+    if (queryError?.code === "PGRST205") { setSchemaUnavailable(true); setError(""); setVerifications([]); }
+    else if (queryError) { setSchemaUnavailable(false); setError(errorMessage(queryError)); setVerifications([]); }
+    else { setSchemaUnavailable(false); setVerifications((data || []) as OwnerVerification[]); setError(""); }
     setLoading(false);
   }, []);
 
@@ -89,7 +91,7 @@ export default function OwnerVerificationPage() {
   return <>
     <PageHeading title="Owner Gov ID Verification — PRIVATE" subtitle="Blue Tick review · Any 2 distinct document types, each with front and back sides (4 photos total). Government ID images are only shown in this admin review." actions={<><LiveDot /><span className="rounded-full bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">{verifications.length} pending</span></>} />
     <div className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950"><ShieldAlert size={20} className="mt-0.5 shrink-0 text-amber-600" /><p><strong>Private & sensitive data.</strong> Four photos: front and back of two government IDs. This review is intended only between Admin {ADMIN_PHONE} and the owner. Workers must not see these images. Owners may submit any two of Aadhaar, Voter ID, or Driving License, with both sides for each. Handle downloads carefully.</p></div>
-    {error && <ErrorNotice message={error} />}{notice && <div role="status" className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</div>}
+    {schemaUnavailable && <div role="status" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><strong>Owner verification unavailable.</strong> The Supabase project does not expose <code>public.owner_verifications</code>. No database changes have been made.</div>}{error && <ErrorNotice message={error} />}{notice && <div role="status" className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</div>}
     <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-stone-100 bg-white p-3 shadow-sm xl:flex-row xl:items-center"><SearchField value={search} onChange={setSearch} placeholder="Search owner name or phone…" /><div className="flex flex-wrap gap-2">{docFilters.map((option) => <button key={option.id} onClick={() => setDocFilter(option.id)} className={`rounded-xl px-3 py-2.5 text-xs font-bold transition ${docFilter === option.id ? "bg-blue-600 text-white" : "bg-stone-100 text-stone-600 hover:bg-blue-50 hover:text-blue-700"}`}>{option.label}</button>)}</div><RefreshButton onClick={() => void refresh()} loading={loading} /></div>
     {loading ? <LoadingState label="Loading private owner verifications" /> : visible.length === 0 ? <EmptyState icon={BadgeCheck} title="No pending owner verifications" detail="All owners verified or no new submissions. Boss 9025421145 · Blue Tick review complete." /> : <div className="grid gap-5 2xl:grid-cols-2">{visible.map((item) => {
       const images = asOwnerImages(item) as PreviewImage[];
