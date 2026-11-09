@@ -9,6 +9,7 @@
     { "path": "/dashboard/owners", "title": "All Owners" },
     { "path": "/dashboard/approved", "title": "Approved" },
     { "path": "/dashboard/rejected", "title": "Rejected" },
+    { "path": "/dashboard/control-center", "title": "Control Center" },
     { "path": "/dashboard/settings", "title": "Settings" }
   ]
 }

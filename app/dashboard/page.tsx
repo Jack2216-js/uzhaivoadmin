@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Activity, BadgeCheck, Briefcase, CheckCircle2, Clock3, Crown, Users, UserRoundCheck, Layers3, ArrowUpRight, PhoneCall } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseConfigured } from "@/lib/supabase";
 import type { OwnerVerification, ProofSubmission } from "@/lib/types";
 import { errorMessage, formatDocType, formatDate, timeAgo } from "@/lib/utils";
 import { ErrorNotice, LoadingState, MetricCard, PageHeading, Panel } from "@/components/ui";
@@ -18,6 +18,11 @@ export default function OverviewPage() {
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
+    if (!supabaseConfigured) {
+      setError("Supabase is not configured for this admin preview. Add NEXT_PUBLIC_SUPABASE_ANON_KEY, then restart the admin server.");
+      setLoading(false);
+      return;
+    }
     const [jobsCount, workerProofCount, workerApplicationPendingCount, ownerPendingCount, workersCount, ownersCount, activeJobsCount, applicationsCount, recentProofs, recentOwners] = await Promise.all([
       supabase.from("jobs").select("id", { count: "exact", head: true }),
       supabase.from("proof_submissions").select("id", { count: "exact", head: true }).eq("status", "submitted"),

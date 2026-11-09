@@ -16,6 +16,7 @@ The remaining admin features do not yet match the live schema. Profile queries n
 - Job search and detail view using the verified live columns. The page displays Active/Inactive from `is_active`, can deactivate an active row, and requires confirmation before permanent deletion. This is not an approval/rejection status.
 - Workers, Jobs and Owners have per-row and select-visible checkboxes, plus confirmed bulk deletion for explicitly selected records.
 - Responsive navigation, cards, horizontally scrollable tables, and English/Tamil labels.
+- A–Z Control Center for worker applications, proof submissions, front/back proof policy, contact privacy, worker-profile snapshots, Need-count lifecycle, allowed proof types, theme, font size, language, and app version. Controls publish to the additive `platform_settings` table after the migration is applied; until then the admin keeps a local draft.
 
 ## Local setup
 
@@ -44,5 +45,7 @@ Before enabling private owner-document review or privileged production operation
 4. Review policies for existing jobs, applications and proof records before changing their RLS; other applications may depend on current access.
 
 The unapplied [draft migration](supabase/migrations/20261105084000_uzhaivo_admin_panel.sql) adds nullable job/profile/review metadata, creates `admin_users` and `owner_verifications`, seeds Boss as a super-admin, and creates a new private owner-document bucket with owner/admin policies. It does not migrate unknown data from `user_proofs`, infer job-owner relationships, or alter existing-table RLS. The photo columns must hold private Storage object keys, which the authenticated app must turn into short-lived signed URLs. Review this script before any execution.
+
+The unapplied [platform settings migration](supabase/migrations/20261108090000_uzhaivo_platform_settings.sql) adds the single-row `platform_settings` control document used by the Control Center. Apply it only after the admin authentication/RLS predicate from the first migration is available.
 
 No RLS, schema, or database-row changes have been made. The demo login is still active in the website until the real-auth approach is approved and implemented.

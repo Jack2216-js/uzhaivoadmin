@@ -3,8 +3,8 @@
 import { useEffect, useState, type ReactNode, type FormEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BadgeCheck, Bell, Briefcase, CheckCircle2, Clock3, Crown, LayoutDashboard, LogOut, Menu, Search, Settings, Shield, Users, X, XCircle } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { BadgeCheck, Bell, Briefcase, CheckCircle2, Clock3, Crown, LayoutDashboard, LogOut, Menu, Search, Settings, Shield, SlidersHorizontal, Users, X, XCircle } from "lucide-react";
+import { supabase, supabaseConfigured } from "@/lib/supabase";
 import { ADMIN_PHONE } from "@/lib/utils";
 import { ErrorNotice } from "@/components/ui";
 
@@ -17,6 +17,7 @@ const navItems = [
   { href: "/dashboard/owners", label: "All Owners + Blue Tick", icon: Crown },
   { href: "/dashboard/approved", label: "Approved", icon: CheckCircle2 },
   { href: "/dashboard/rejected", label: "Rejected", icon: XCircle },
+  { href: "/dashboard/control-center", label: "Control Center", sub: "A–Z App Controls", icon: SlidersHorizontal },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
@@ -41,6 +42,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     const loadCounts = async () => {
+      if (!supabaseConfigured) {
+        setLoadError("Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_ANON_KEY to enable live admin counts.");
+        return;
+      }
       const [proofs, applications, owners] = await Promise.all([
         supabase.from("proof_submissions").select("id", { count: "exact", head: true }).eq("status", "submitted"),
         supabase.from("job_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
@@ -50,7 +55,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       setPendingWorker((proofs.count || 0) > 0 ? proofs.count || 0 : applications.count || 0);
       setPendingOwner(owners.count || 0);
       const issue = proofs.error || applications.error;
-      if (issue) setLoadError(`Live Supabase count error (${issue.code}): ${issue.message}`);
+      if (issue) setLoadError(`Live Supabase count error: ${issue.message || "Unable to query the configured project."}`);
       else setLoadError("");
     };
     void loadCounts();
